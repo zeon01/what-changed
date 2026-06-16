@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+.python-version
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Models & large artifacts (never commit weights)
+*.gguf
+*.safetensors
+*.bin
+*.ckpt
+models/
+checkpoints/
+outputs/
+lora/
+merged/
+
+# Training
+wandb/
+runs/
+*.log
+
+# Local app data — PRIVACY: caregiver health data must never be committed
+*.db
+*.sqlite
+*.sqlite3
+/data/
+!/data/.gitkeep
+
+# Generated dataset — synthetic notes kept private
+*.jsonl
+sft/_gen/
+
+# Internal / prep — not for the public repo
+docs/
+DEMO_SCRIPT.md
+SOCIAL_POST.md
+DATASET_README.md
+
+# Gradio
+.gradio/
+flagged/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,7 @@
+gradio==5.49.1
+llama-cpp-python @ https://huggingface.co/zeon01/what-changed-1b/resolve/main/wheels/llama_cpp_python-0.3.26-py3-none-linux_x86_64.whl ; sys_platform == "linux"
+llama-cpp-python==0.3.26 ; sys_platform != "linux"
+matplotlib==3.10.0
+faster-whisper
+huggingface_hub>=0.30
+pytest==8.4.0

@@ -1,0 +1,3 @@
+# unsloth pulls compatible transformers / trl / peft / datasets / accelerate / torch
+unsloth==2026.5.1
+openai==1.99.0
