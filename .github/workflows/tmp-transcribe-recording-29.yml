@@ -1,0 +1,38 @@
+name: Temporary transcription - Recording 29
+
+on:
+  push:
+    branches:
+      - tmp-transcribe-recording-29
+  workflow_dispatch:
+
+jobs:
+  transcribe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade yt-dlp faster-whisper
+          ffmpeg -version | head -n 2
+
+      - name: Download public source audio
+        run: |
+          yt-dlp --no-playlist -f 'bestaudio/best' -o 'source.%(ext)s' 'https://www.youtube.com/watch?v=Tpto13rP7TU'
+          ls -lh source.*
+
+      - name: Prepare original and dialogue-enhanced audio
+        run: |
+          ffmpeg -y -i source.* -vn -ac 1 -ar 16000 -c:a pcm_s16le original.wav
+          if ffmpeg -hide_banner -filters | grep -q dialoguenhance; then
+            ffmpeg -y -i source.* -vn -af "dialoguenhance=original=0.05:enhance=3:voice=8,pan=mono|c0=0.5*c0+0.5*c1,highpass=f=100,lowpass=f=7500,acompressor=threshold=0.05:ratio=4:attack=5:release=100:makeup=3,alimiter=limit=0.95" -ar 16000 -c:a pcm_s16le enhanced.wav
+          else
+            ffmpeg -y -i source.* -vn -af "pan=mono|c0=0.5*c0+0.5*c1,highpass=f=100,lowpass=f=7500,acompressor=threshold=0.05:ratio=4:attack=5:release=100:makeup=3,alimiter=limit=0.95" -ar 16000 -c:a pcm_s16le enhanced.wav
+          fi
+          ls -lh original.wav enhanced.wav
+
+      - name: Transcribe both passes with Whisper medium.en and VAD disabled
+        run: python scripts/transcribe_recording29.py
