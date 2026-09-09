@@ -18,28 +18,26 @@ jobs:
             https://github.com/ggml-org/whisper.cpp/releases/download/b4938/whisper-bin-ubuntu-x64.tar.gz
           mkdir -p whisper-bin
           tar -xzf whisper-bin.tar.gz -C whisper-bin
-          find whisper-bin -maxdepth 4 -type f -print
 
-      - name: Download quantized English small model
+      - name: Download quantized English medium model
         run: |
           set -euxo pipefail
-          curl -L --fail --retry 3 -o ggml-small.en-q5_1.bin \
-            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en-q5_1.bin?download=true'
-          ls -lh ggml-small.en-q5_1.bin
+          curl -L --fail --retry 3 -o ggml-medium.en-q5_0.bin \
+            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en-q5_0.bin?download=true'
+          ls -lh ggml-medium.en-q5_0.bin
 
       - name: Build portable bundle
         run: |
           set -euxo pipefail
           mkdir -p bundle/runtime bundle/model
           cp -a whisper-bin/. bundle/runtime/
-          cp ggml-small.en-q5_1.bin bundle/model/
-          find bundle/runtime -type f -maxdepth 4 -print
+          cp ggml-medium.en-q5_0.bin bundle/model/
           du -sh bundle
 
       - name: Upload temporary Whisper bundle
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-recording29-bundle-v2
+          name: whisper-recording29-medium-bundle
           path: bundle/
           compression-level: 0
           retention-days: 1
