@@ -7,32 +7,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  transcribe:
+  stage-whisper:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install tools
+      - name: Download whisper.cpp Linux binary
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade yt-dlp faster-whisper
-          ffmpeg -version | head -n 2
+          set -euxo pipefail
+          curl -L --fail --retry 3 -o whisper-bin.tar.gz \
+            https://github.com/ggml-org/whisper.cpp/releases/download/b4938/whisper-bin-ubuntu-x64.tar.gz
+          mkdir -p whisper-bin
+          tar -xzf whisper-bin.tar.gz -C whisper-bin
+          find whisper-bin -maxdepth 3 -type f -print
 
-      - name: Download public source audio
+      - name: Download quantized English small model
         run: |
-          yt-dlp --no-playlist -f 'bestaudio/best' -o 'source.%(ext)s' 'https://www.youtube.com/watch?v=Tpto13rP7TU'
-          ls -lh source.*
+          set -euxo pipefail
+          curl -L --fail --retry 3 -o ggml-small.en-q5_1.bin \
+            'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en-q5_1.bin?download=true'
+          ls -lh ggml-small.en-q5_1.bin
 
-      - name: Prepare original and dialogue-enhanced audio
+      - name: Build portable bundle
         run: |
-          ffmpeg -y -i source.* -vn -ac 1 -ar 16000 -c:a pcm_s16le original.wav
-          if ffmpeg -hide_banner -filters | grep -q dialoguenhance; then
-            ffmpeg -y -i source.* -vn -af "dialoguenhance=original=0.05:enhance=3:voice=8,pan=mono|c0=0.5*c0+0.5*c1,highpass=f=100,lowpass=f=7500,acompressor=threshold=0.05:ratio=4:attack=5:release=100:makeup=3,alimiter=limit=0.95" -ar 16000 -c:a pcm_s16le enhanced.wav
-          else
-            ffmpeg -y -i source.* -vn -af "pan=mono|c0=0.5*c0+0.5*c1,highpass=f=100,lowpass=f=7500,acompressor=threshold=0.05:ratio=4:attack=5:release=100:makeup=3,alimiter=limit=0.95" -ar 16000 -c:a pcm_s16le enhanced.wav
-          fi
-          ls -lh original.wav enhanced.wav
+          set -euxo pipefail
+          mkdir -p bundle/bin bundle/model
+          CLI="$(find whisper-bin -type f -name 'whisper-cli' | head -n 1)"
+          test -n "$CLI"
+          cp "$CLI" bundle/bin/whisper-cli
+          chmod +x bundle/bin/whisper-cli
+          cp ggml-small.en-q5_1.bin bundle/model/
+          ldd bundle/bin/whisper-cli || true
+          du -sh bundle
 
-      - name: Transcribe both passes with Whisper medium.en and VAD disabled
-        run: python scripts/transcribe_recording29.py
+      - name: Upload temporary Whisper bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-recording29-bundle
+          path: bundle/
+          compression-level: 0
+          retention-days: 1
