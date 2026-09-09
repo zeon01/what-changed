@@ -18,7 +18,7 @@ jobs:
             https://github.com/ggml-org/whisper.cpp/releases/download/b4938/whisper-bin-ubuntu-x64.tar.gz
           mkdir -p whisper-bin
           tar -xzf whisper-bin.tar.gz -C whisper-bin
-          find whisper-bin -maxdepth 3 -type f -print
+          find whisper-bin -maxdepth 4 -type f -print
 
       - name: Download quantized English small model
         run: |
@@ -30,19 +30,16 @@ jobs:
       - name: Build portable bundle
         run: |
           set -euxo pipefail
-          mkdir -p bundle/bin bundle/model
-          CLI="$(find whisper-bin -type f -name 'whisper-cli' | head -n 1)"
-          test -n "$CLI"
-          cp "$CLI" bundle/bin/whisper-cli
-          chmod +x bundle/bin/whisper-cli
+          mkdir -p bundle/runtime bundle/model
+          cp -a whisper-bin/. bundle/runtime/
           cp ggml-small.en-q5_1.bin bundle/model/
-          ldd bundle/bin/whisper-cli || true
+          find bundle/runtime -type f -maxdepth 4 -print
           du -sh bundle
 
       - name: Upload temporary Whisper bundle
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-recording29-bundle
+          name: whisper-recording29-bundle-v2
           path: bundle/
           compression-level: 0
           retention-days: 1
