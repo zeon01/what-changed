@@ -7,37 +7,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  stage-whisper:
+  stage-medium-model:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Download whisper.cpp Linux binary
-        run: |
-          set -euxo pipefail
-          curl -L --fail --retry 3 -o whisper-bin.tar.gz \
-            https://github.com/ggml-org/whisper.cpp/releases/download/b4938/whisper-bin-ubuntu-x64.tar.gz
-          mkdir -p whisper-bin
-          tar -xzf whisper-bin.tar.gz -C whisper-bin
-
       - name: Download quantized English medium model
         run: |
           set -euxo pipefail
           curl -L --fail --retry 3 -o ggml-medium.en-q5_0.bin \
             'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en-q5_0.bin?download=true'
-          ls -lh ggml-medium.en-q5_0.bin
+          split -b 280M ggml-medium.en-q5_0.bin medium.part.
+          ls -lh medium.part.*
 
-      - name: Build portable bundle
-        run: |
-          set -euxo pipefail
-          mkdir -p bundle/runtime bundle/model
-          cp -a whisper-bin/. bundle/runtime/
-          cp ggml-medium.en-q5_0.bin bundle/model/
-          du -sh bundle
-
-      - name: Upload temporary Whisper bundle
+      - name: Upload model part one
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-recording29-medium-bundle
-          path: bundle/
+          name: whisper-medium-part-aa
+          path: medium.part.aa
+          compression-level: 0
+          retention-days: 1
+
+      - name: Upload model part two
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-medium-part-ab
+          path: medium.part.ab
           compression-level: 0
           retention-days: 1
